@@ -67,3 +67,52 @@ Saya menyesuaikan warna tema agar aplikasi Football News memiliki identitas visu
 - Warna Teks/Kontras: Saya secara eksplisit mengatur warna teks menjadi putih (color: Colors.white) pada elemen yang berada di atas latar belakang Indigo (seperti judul AppBar, teks di DrawerHeader, dan teks tombol "Simpan") untuk memastikan kontras yang baik dan keterbacaan.
 
 Dengan mengandalkan warna dari theme (Theme.of(context).colorScheme.primary dan .secondary) dan menetapkan warna yang sama secara eksplisit di tempat lain (seperti Colors.indigo), saya dapat mempertahankan skema warna yang kohesif di seluruh aplikasi.
+
+Tugas 9:
+1. Jelaskan mengapa kita perlu membuat model Dart saat mengambil/mengirim data JSON? Apa konsekuensinya jika langsung memetakan Map<String, dynamic> tanpa model (terkait validasi tipe, null-safety, maintainability)?
+2. Apa fungsi package http dan CookieRequest dalam tugas ini?Jelaskan perbedaan peran http vs CookieRequest.
+3. Jelaskan mengapa instance CookieRequest perlu untuk dibagikan ke semua komponen di aplikasi Flutter.
+4. Jelaskan konfigurasi konektivitas yang diperlukan agar Flutter dapat berkomunikasi dengan Django. Mengapa kita perlu menambahkan 10.0.2.2 pada ALLOWED_HOSTS, mengaktifkan CORS dan pengaturan SameSite/cookie, dan menambahkan izin akses internet di Android? Apa yang akan terjadi jika konfigurasi tersebut tidak dilakukan dengan benar?
+5. Jelaskan mekanisme pengiriman data mulai dari input hingga dapat ditampilkan pada Flutter.
+6. Jelaskan mekanisme autentikasi dari login, register, hingga logout. Mulai dari input data akun pada Flutter ke Django hingga selesainya proses autentikasi oleh Django dan tampilnya menu pada Flutter.
+
+Jawaban:
+1. Pentingnya Model Dart untuk Data JSON
+Kita perlu membuat model Dart (kelas) saat mengambil atau mengirim data JSON karena beberapa alasan krusial yang berkaitan dengan keamanan tipe (type safety), null-safety, dan maintainability (kemudahan pemeliharaan).
+
+Mengapa Model Diperlukan
+Keamanan Tipe dan Validasi: Dengan model, kita mendefinisikan secara eksplisit tipe data untuk setiap field (misalnya, String untuk nama, int untuk usia). Jika kita hanya menggunakan Map<String, dynamic>, kita harus selalu melakukan casting secara manual (misalnya, data['name'] as String?). Jika field tersebut hilang atau tipe datanya salah, casting manual ini dapat menyebabkan runtime error (kesalahan saat aplikasi berjalan) yang sulit dilacak. Model menyediakan validasi tipe yang lebih kuat.
+
+Null-Safety: Dart memiliki null-safety yang ketat. Dalam Map<String, dynamic>, kita tidak tahu apakah sebuah key pasti ada atau tidak, dan apakah nilainya pasti non-null. Dalam model, kita dapat mendefinisikan field sebagai wajib (final String name;) atau opsional/nullable (final String? description;). Ini memaksa kita untuk menangani potensi nilai null selama proses pemetaan (fromJson), sehingga mencegah runtime error yang disebabkan oleh dereferensi null.
+
+Maintainability dan Readability: Model bertindak sebagai dokumentasi yang jelas tentang struktur data yang diharapkan dari API. Setiap kali struktur API berubah, perubahan pada model akan langsung menunjukkan error kompilasi, memaksa pengembang untuk memperbarui logika di semua tempat yang menggunakan model tersebut. Ini jauh lebih mudah dikelola daripada melacak perubahan pada string keys di seluruh kode yang menggunakan Map<String, dynamic>.
+
+Konsekuensi Memetakan Langsung Map<String, dynamic>
+Konsekuensi utama dari langsung memetakan Map<String, dynamic> adalah:
+
+Peningkatan Risiko Runtime Error: Kesalahan pengetikan pada key (string literal), salah asumsi tipe data, atau kegagalan menangani nilai null akan menyebabkan aplikasi crash hanya saat kode tersebut dieksekusi (bukan saat dikompilasi).
+
+Kode yang Sulit Dipelihara: Tidak ada autocomplete atau pemeriksaan tipe untuk string keys, membuat refactoring atau perubahan struktur data menjadi proses yang rawan kesalahan dan memakan waktu.
+
+2. Fungsi Package http dan CookieRequest
+Fungsi Package http
+Package http adalah library standar di Flutter/Dart untuk melakukan permintaan HTTP (seperti GET, POST, PUT, DELETE) ke server web. Fungsinya adalah sebagai klien yang mengirim permintaan dan menerima respons, namun tidak secara otomatis mengelola state seperti cookies di antara permintaan yang berbeda. Setiap permintaan yang dibuat dianggap independen.
+
+Fungsi CookieRequest (Mengasumsikan Custom atau Library Pengelola Cookie)
+CookieRequest (atau kelas serupa seperti http.Client yang diperluas, atau library seperti dio dengan cookie manager) digunakan untuk mengelola session state, terutama cookies, secara otomatis di antara beberapa permintaan. Fungsi utamanya adalah:
+
+Menerima Cookie: Setelah permintaan login yang berhasil, ia akan menyimpan cookie yang dikirim server di header respons.
+
+Mengirim Cookie: Secara otomatis melampirkan cookie yang disimpan pada setiap permintaan berikutnya ke domain yang sama (misalnya, permintaan untuk mengambil data pengguna yang terautentikasi).
+
+Peran http:
+Peran dasar: Melakukan permintaan HTTP tunggal.
+Manajemen Cookie:Tidak mengelola cookie antar permintaan.
+Sesi: Setiap permintaan adalah sesi baru (tidak stateful).
+Penggunaan: Untuk permintaan publik yang tidak memerlukan autentikasi sesi.
+
+Peran CookieRequest:
+Peran dasar: Melakukan permintaan HTTP dan mengelola state.
+Manajemen Cookie: Secara otomatis menyimpan dan mengirim kembali cookies untuk mempertahankan sesi.
+Sesi: Mempertahankan sesi (stateful) dengan menyimpan cookies login.
+Penggunaan: Untuk semua permintaan yang memerlukan autentikasi sesi (seperti API yang hanya dapat diakses setelah login).
